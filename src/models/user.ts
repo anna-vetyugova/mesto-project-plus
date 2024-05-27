@@ -1,5 +1,5 @@
-// models/user.ts
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
+import validator from 'validator';
 
 interface IUser {
   name: string;
@@ -10,12 +10,10 @@ interface IUser {
 const userSchema = new mongoose.Schema<IUser>(
   {
     name: {
-      // у пользователя есть имя — опишем требования к имени в схеме:
-      type: String, // имя — это строка
-      required: true, // имя — обязательное поле
-      minlength: 2,
-      maxlength: 30,
-      unique: true,
+      type: String,
+      required: [true, 'Поле "name" должно быть заполнено'],
+      minlength: [2, 'Минимальная длина поля "name" - 2'],
+      maxlength: [30, 'Максимальная длина поля "name" - 30'],
     },
     about: {
       type: String,
@@ -25,14 +23,17 @@ const userSchema = new mongoose.Schema<IUser>(
     },
     avatar: {
       type: String,
-      required: true,
+      validate: {
+        validator: (v: string) => validator.isURL(v),
+        message: 'Некорректный URL',
+      },
     },
   },
   {
     timestamps: true,
     versionKey: false,
-  }
+  },
 );
 
 // создаём модель и экспортируем её
-export default mongoose.model<IUser>("user", userSchema);
+export default mongoose.model<IUser>('user', userSchema);

@@ -1,4 +1,3 @@
-
 class ConflictError extends Error {
   public statusCode;
 

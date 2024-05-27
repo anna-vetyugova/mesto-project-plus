@@ -1,61 +1,53 @@
-import mongoose from "mongoose";
-import { Error as MongooseError } from "mongoose";
+import { Error as MongooseError } from 'mongoose';
+import {
+  NextFunction,
+  Request,
+  Response,
+} from 'express';
+import { constants } from 'http2';
+import { AuthContext } from '../types/types';
+import User from '../models/user';
+import NotFoundError from '../error/not-found-error';
+import ConflictError from '../error/confict-error';
+import BadRequesetError from '../error/bad-request-error';
 
-import { NextFunction, Request, Response } from "express";
-import User from "../models/user";
-import { constants } from "http2";
-import { AuthContext } from "types/types";
-
-import NotFoundError from "../error/not-found-error";
-import ConflictError from "../error/confict-error";
-import BadRequesetError from "../error/bad-request-error";
-
-export const getUsers = (req: Request, res: Response) => {
+export const getUsers = (req: Request, res: Response, next: NextFunction) => {
   User.find({})
     .then((users) => res.send({ data: users }))
-    .catch(() =>
-      res
-        .status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR)
-        .send({ message: "Произошла ошибка" })
-    );
+    .catch((error) => {
+      next(error);
+    });
 };
 
 export const getUserById = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
-  const userId = req.params.userId;
-  User.findById(userId)
-    .orFail(new NotFoundError("Пользователь не найден"))
+  User.findById(req.params.userId)
+    .orFail(new NotFoundError('Пользователь не найден'))
     .then((user) => {
-      if (!user) {
-        throw new NotFoundError("Пользователь не найден");
-      }
       res.send({ data: user });
     })
     .catch((error) => {
-      if (error instanceof NotFoundError) {
-        next(new NotFoundError(error.message));
-      }
       if (error instanceof MongooseError.CastError) {
-        next(new BadRequesetError("Некорректный ИД пользователя"));
+        return next(new BadRequesetError('Некорректный ИД пользователя'));
       }
-      next(error);
+      return next(error);
     });
 };
 
 export const createUser = (
   req: Request,
   res: Response<unknown, AuthContext>,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const { name, about, avatar } = req.body;
 
   User.findOne({ name })
     .then((existingUser) => {
       if (existingUser) {
-        throw new ConflictError("Пользователь с таким именем уже существует");
+        throw new ConflictError('Пользователь с таким именем уже существует');
       } else {
         return User.create({ name, about, avatar });
       }
@@ -65,21 +57,20 @@ export const createUser = (
     })
     .catch((error) => {
       if (error instanceof MongooseError.ValidationError) {
-        next(
+        return next(
           new BadRequesetError(
-            `Переданы невалидные данные для создания пользователя: ${error.message}`
-          )
+            `Переданы невалидные данные для создания пользователя: ${error.message}`,
+          ),
         );
-      } else {
-        next(error);
       }
+      return next(error);
     });
 };
 
 export const updateUserProfile = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const userId = res.locals.user._id;
   const { name, about } = req.body;
@@ -89,16 +80,15 @@ export const updateUserProfile = (
   User.findByIdAndUpdate(
     userId,
     { name, about },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   )
     .then((user) => {
       if (!user) {
-        throw new NotFoundError("Пользователь не найден");
+        throw new NotFoundError('Пользователь не найден');
       }
       res.send({ data: user });
     })
     .catch((error) => {
-      console.log(error);
       next(error);
     });
 };
@@ -106,7 +96,7 @@ export const updateUserProfile = (
 export const updateUserAvatar = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const userId = res.locals.user._id;
   const { avatar } = req.body;
@@ -116,7 +106,7 @@ export const updateUserAvatar = (
   User.findByIdAndUpdate(userId, { avatar }, { new: true, runValidators: true })
     .then((user) => {
       if (!user) {
-        throw new NotFoundError("Пользователь не найден");
+        throw new NotFoundError('Пользователь не найден');
       }
       res.send({ data: user });
     })
