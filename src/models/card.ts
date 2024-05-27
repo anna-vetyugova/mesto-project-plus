@@ -1,29 +1,47 @@
-// models/user.ts
 import mongoose from "mongoose";
 
 interface ICard {
   name: string;
   link: string;
-  owner: string;
-  likes: string;
-  createdAt: string;
+  owner: mongoose.Types.ObjectId;
+  likes: mongoose.Types.ObjectId[];
+  createdAt: Date;
 }
 
-const cardSchema = new mongoose.Schema<ICard>({
-  name: { // у пользователя есть имя — опишем требования к имени в схеме:
-    type: String, // имя — это строка
-    required: true, // имя — обязательное поле
-    minlength: 2,
-    maxlength: 30,
+const cardSchema = new mongoose.Schema<ICard>(
+  {
+    name: {
+      type: String,
+      required: true,
+      minlength: 2,
+      maxlength: 30,
+    },
+    link: {
+      type: String,
+      required: true,
+    },
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "uer",
+      required: true,
+    },
+    likes: [
+      {
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: "user",
+        default: [],
+      },
+    ],
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
   },
-  about: {
-    type: String,
-    required: true,
-    minlength: 2,
-    maxlength: 200,
-  },
-  avatar: {
-    String,
-    required: true,
+  {
+    timestamps: true,
+    versionKey: false,
   }
-});
+);
+
+// создаём модель и экспортируем её
+export default mongoose.model<ICard>("card", cardSchema);
