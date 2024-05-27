@@ -15,7 +15,10 @@ export const getUsers = (req: Request, res: Response, next: NextFunction) => {
   User.find({})
     .then((users) => res.send({ data: users }))
     .catch((error) => {
-      next(error);
+      if (error instanceof NotFoundError) {
+        return next(new NotFoundError(error.message));
+      }
+      return next(error);
     });
 };
 
@@ -89,7 +92,10 @@ export const updateUserProfile = (
       res.send({ data: user });
     })
     .catch((error) => {
-      next(error);
+      if (error instanceof NotFoundError) {
+        return next(new NotFoundError(error.message));
+      }
+      return next(error);
     });
 };
 
@@ -111,6 +117,9 @@ export const updateUserAvatar = (
       res.send({ data: user });
     })
     .catch((error) => {
-      next(error);
+      if (error instanceof NotFoundError) {
+        return next(new NotFoundError(error.message));
+      }
+      return next(error);
     });
 };

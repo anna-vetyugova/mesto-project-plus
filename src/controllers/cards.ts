@@ -13,7 +13,10 @@ export const getCards = (req: Request, res: Response, next: NextFunction) => {
   Card.find({})
     .then((users) => res.send({ data: users }))
     .catch((error) => {
-      next(error);
+      if (error instanceof NotFoundError) {
+        return next(new NotFoundError(error.message));
+      }
+      return next(error);
     });
 };
 
