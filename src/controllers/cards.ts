@@ -25,14 +25,13 @@ export const createCard = (req: Request, res: Response, next: NextFunction) => {
     })
     .catch((error) => {
       if (error instanceof MongooseError.ValidationError) {
-        next(
+        return next(
           new BadRequestError(
             `Переданы невалидные данные для создания карточки: ${error.message}`,
           ),
         );
-      } else {
-        next(error);
       }
+      return next(error);
     });
 };
 
@@ -47,15 +46,16 @@ export const deleteCard = (req: Request, res: Response, next: NextFunction) => {
     })
     .catch((error) => {
       if (error instanceof MongooseError.ValidationError) {
-        next(
+        return next(
           new BadRequestError(
             `Переданы невалидные данные для удаления карточки: ${error.message}`,
           ),
         );
       }
       if (error instanceof MongooseError.CastError) {
-        next(new BadRequestError('Некорректный ИД карточки'));
-      } else next(error);
+        return next(new BadRequestError('Некорректный ИД карточки'));
+      }
+      return next(error);
     });
 };
 
@@ -74,12 +74,12 @@ export const likeCard = (req: Request, res: Response, next: NextFunction) => {
     })
     .catch((error) => {
       if (error instanceof NotFoundError) {
-        next(new NotFoundError(error.message));
+        return next(new NotFoundError(error.message));
       }
       if (error instanceof MongooseError.CastError) {
-        next(new BadRequestError('Некорректный ИД карточки'));
+        return next(new BadRequestError('Некорректный ИД карточки'));
       }
-      next(error);
+      return next(error);
     });
 };
 
@@ -98,11 +98,11 @@ export const dislikeCard = (req: Request, res: Response, next: NextFunction) => 
     })
     .catch((error) => {
       if (error instanceof NotFoundError) {
-        next(new NotFoundError(error.message));
+        return next(new NotFoundError(error.message));
       }
       if (error instanceof MongooseError.CastError) {
-        next(new BadRequestError('Некорректный ИД карточки'));
+        return next(new BadRequestError('Некорректный ИД карточки'));
       }
-      next(error);
+      return next(error);
     });
 };
