@@ -46,7 +46,7 @@ export const deleteCard = (req: Request, res: Response, next: NextFunction) => {
       if (!card) {
         throw new NotFoundError('Карточка не найдена');
       }
-      if (card.owner !== res.locals.user._id) {
+      if (card.owner.toString() !== res.locals.user._id) {
         throw new ForbiddenError('Отсутствуют полномочия на удаление карточки');
       }
       res.send({ data: card });

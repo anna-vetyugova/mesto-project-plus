@@ -60,19 +60,16 @@ export const createUser = (
     .then((existingUser) => {
       if (existingUser) {
         throw new ConflictError('Пользователь с такой электронной почтой уже существует');
-      } else {
-        bcrypt.hash(password, 10)
-          .then((hash) => {
-            User.create({
-              name,
-              about,
-              avatar,
-              email,
-              password: hash,
-            });
-          });
       }
+      return bcrypt.hash(password, 10);
     })
+    .then((hash) => User.create({
+      name,
+      about,
+      avatar,
+      email,
+      password: hash,
+    }))
     .then((user) => {
       res.status(constants.HTTP_STATUS_CREATED).send(user);
     })
@@ -80,7 +77,7 @@ export const createUser = (
       if (error instanceof MongooseError.ValidationError) {
         return next(
           new BadRequesetError(
-            `Переданы невалидные данные для создания пользователя: ${error.message}`,
+            `Переданы невалидные данные для регистрации пользователя: ${error.message}`,
           ),
         );
       }
@@ -151,7 +148,7 @@ export const login = (
   User.findOne({ email }).select('+password')
     .then((user) => {
       if (!user) {
-        throw new NotFoundError('Пользователь не найден');
+        throw new UnAuthorized('Неправильные почта или пароль');
       }
       return bcrypt.compare(password, user.password)
         .then((matched) => {
@@ -173,13 +170,12 @@ export const login = (
     });
 };
 
-export const getCurrentUser = (
+export const getUserCurrent = (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
-  const userId = res.locals.user._id;
-  User.findById(userId)
+  User.findById(res.locals.user._id)
     .orFail(new NotFoundError('Пользователь не найден'))
     .then((user) => {
       res.send({ data: user });
