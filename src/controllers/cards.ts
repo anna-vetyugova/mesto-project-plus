@@ -8,7 +8,7 @@ import { constants } from 'http2';
 import Card from '../models/card';
 import NotFoundError from '../error/not-found-error';
 import BadRequestError from '../error/bad-request-error';
-import ForbiddenError from 'error/forbidden-error';
+import ForbiddenError from '../error/forbidden-error';
 
 export const getCards = (req: Request, res: Response, next: NextFunction) => {
   Card.find({})
@@ -46,7 +46,7 @@ export const deleteCard = (req: Request, res: Response, next: NextFunction) => {
       if (!card) {
         throw new NotFoundError('Карточка не найдена');
       }
-      if(card.owner !== res.locals.user._id) {
+      if (card.owner !== res.locals.user._id) {
         throw new ForbiddenError('Отсутствуют полномочия на удаление карточки');
       }
       res.send({ data: card });

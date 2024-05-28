@@ -6,7 +6,7 @@ import {
   updateUserProfile,
   updateUserAvatar,
   login,
-  getCurrentUser
+  getCurrentUser,
 } from '../controllers/users';
 
 const router = Router();

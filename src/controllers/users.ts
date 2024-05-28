@@ -5,14 +5,14 @@ import {
   Response,
 } from 'express';
 import { constants } from 'http2';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { AuthContext } from '../types/types';
-import bcrypt from 'bcryptjs'; // импортируем bcrypt
-import jwt from 'jsonwebtoken';  // импортируем модуль
 import User from '../models/user';
 import NotFoundError from '../error/not-found-error';
 import ConflictError from '../error/confict-error';
 import BadRequesetError from '../error/bad-request-error';
-import UnAuthorized from 'error/unauthorized-error';
+import UnAuthorized from '../error/unauthorized-error';
 
 export const getUsers = (req: Request, res: Response, next: NextFunction) => {
   User.find({})
@@ -48,15 +48,29 @@ export const createUser = (
   res: Response<unknown, AuthContext>,
   next: NextFunction,
 ) => {
-  const { name, about, avatar, email, password } = req.body;
+  const {
+    name,
+    about,
+    avatar,
+    email,
+    password,
+  } = req.body;
 
   User.findOne({ email })
     .then((existingUser) => {
       if (existingUser) {
         throw new ConflictError('Пользователь с такой электронной почтой уже существует');
       } else {
-        bcrypt.hash(req.body.password, 10)
-        .then(hash => User.create({ name, about, avatar, email, password: hash }))
+        bcrypt.hash(password, 10)
+          .then((hash) => {
+            User.create({
+              name,
+              about,
+              avatar,
+              email,
+              password: hash,
+            });
+          });
       }
     })
     .then((user) => {
@@ -131,7 +145,8 @@ export const updateUserAvatar = (
 export const login = (
   req: Request,
   res: Response,
-  next: NextFunction,) => {
+  next: NextFunction,
+) => {
   const { email, password } = req.body;
   User.findOne({ email }).select('+password')
     .then((user) => {
@@ -146,11 +161,7 @@ export const login = (
           return user;
         });
     })
-    .then((user) => {
-      res.send({
-        token: jwt.sign({ _id: user._id }, 'super-strong-secret', { expiresIn: '7d' } ),
-      });
-    })
+    .then((user) => { res.send({ token: jwt.sign({ _id: user._id }, 'super-strong-secret', { expiresIn: '7d' }) }); })
     .catch((error) => {
       if (error instanceof NotFoundError) {
         return next(new NotFoundError(error.message));

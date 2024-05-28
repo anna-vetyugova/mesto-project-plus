@@ -1,22 +1,21 @@
 // app.ts — входной файл
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import mongoose from 'mongoose';
 import helmet from 'helmet';
 import { errors } from 'celebrate';
-import { AuthContext } from './types/types';
+import {
+  createUser,
+  login,
+} from './controllers/users';
+import {
+  requestLogger,
+  errorLogger,
+} from './middleware/logger';
+import auth from './middleware/auth';
 import { errorHandler } from './middleware/error-handler';
 import usersRouter from './routes/users';
 import cardsRouter from './routes/cards';
 import { MONGO_URL, PORT } from './constants/constants';
-import auth from 'middleware/auth';
-import {
-  createUser,
-  login
-} from 'controllers/users';
-import {
-  requestLogger,
-  errorLogger
-} from 'middleware/logger';
 
 const app = express();
 
@@ -34,14 +33,6 @@ mongoose
     console.log(err);
   });
 
-// app.use(
-//   (req: Request, res: Response<unknown, AuthContext>, next: NextFunction) => {
-//     res.locals.user = {
-//       _id: '6654a19c1630a097d459e273', // вставьте сюда _id созданного в предыдущем пункте пользователя
-//     };
-//     next();
-//   },
-// );
 app.use(requestLogger);
 app.post('/signup', createUser);
 app.post('/signin', login);
