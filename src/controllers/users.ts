@@ -6,10 +6,13 @@ import {
 } from 'express';
 import { constants } from 'http2';
 import { AuthContext } from '../types/types';
+import bcrypt from 'bcryptjs'; // импортируем bcrypt
+import jwt from 'jsonwebtoken';  // импортируем модуль
 import User from '../models/user';
 import NotFoundError from '../error/not-found-error';
 import ConflictError from '../error/confict-error';
 import BadRequesetError from '../error/bad-request-error';
+import UnAuthorized from 'error/unauthorized-error';
 
 export const getUsers = (req: Request, res: Response, next: NextFunction) => {
   User.find({})
@@ -45,14 +48,15 @@ export const createUser = (
   res: Response<unknown, AuthContext>,
   next: NextFunction,
 ) => {
-  const { name, about, avatar } = req.body;
+  const { name, about, avatar, email, password } = req.body;
 
-  User.findOne({ name })
+  User.findOne({ email })
     .then((existingUser) => {
       if (existingUser) {
-        throw new ConflictError('Пользователь с таким именем уже существует');
+        throw new ConflictError('Пользователь с такой электронной почтой уже существует');
       } else {
-        return User.create({ name, about, avatar });
+        bcrypt.hash(req.body.password, 10)
+        .then(hash => User.create({ name, about, avatar, email, password: hash }))
       }
     })
     .then((user) => {
@@ -119,6 +123,59 @@ export const updateUserAvatar = (
     .catch((error) => {
       if (error instanceof NotFoundError) {
         return next(new NotFoundError(error.message));
+      }
+      return next(error);
+    });
+};
+
+export const login = (
+  req: Request,
+  res: Response,
+  next: NextFunction,) => {
+  const { email, password } = req.body;
+  User.findOne({ email }).select('+password')
+    .then((user) => {
+      if (!user) {
+        throw new NotFoundError('Пользователь не найден');
+      }
+      return bcrypt.compare(password, user.password)
+        .then((matched) => {
+          if (!matched) {
+            throw new UnAuthorized('Неправильные почта или пароль');
+          }
+          return user;
+        });
+    })
+    .then((user) => {
+      res.send({
+        token: jwt.sign({ _id: user._id }, 'super-strong-secret', { expiresIn: '7d' } ),
+      });
+    })
+    .catch((error) => {
+      if (error instanceof NotFoundError) {
+        return next(new NotFoundError(error.message));
+      }
+      if (error instanceof UnAuthorized) {
+        return next(new UnAuthorized(error.message));
+      }
+      return next(error);
+    });
+};
+
+export const getCurrentUser = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const userId = res.locals.user._id;
+  User.findById(userId)
+    .orFail(new NotFoundError('Пользователь не найден'))
+    .then((user) => {
+      res.send({ data: user });
+    })
+    .catch((error) => {
+      if (error instanceof MongooseError.CastError) {
+        return next(new BadRequesetError('Некорректный ИД пользователя'));
       }
       return next(error);
     });
