@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import UnAuthorized from '../error/unauthorized-error';
+import { config } from '../../config';
 
 interface SessionRequest extends Request {
   user?: { _id: string | jwt.JwtPayload };
@@ -15,7 +16,7 @@ const authMiddleware = (req: SessionRequest, res: Response, next: NextFunction) 
       throw new UnAuthorized('Необходима авторизация');
     }
     const token = extractBearerToken(authorization);
-    const payload = jwt.verify(token, 'super-strong-secret');
+    const payload = jwt.verify(token, config.JWT_SECRET);
     res.locals.user = payload;
     next();
   } catch (err) {

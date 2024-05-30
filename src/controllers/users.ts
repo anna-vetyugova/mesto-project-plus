@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import { Error as MongooseError } from 'mongoose';
 import {
   NextFunction,
@@ -14,6 +13,7 @@ import NotFoundError from '../error/not-found-error';
 import ConflictError from '../error/confict-error';
 import BadRequesetError from '../error/bad-request-error';
 import UnAuthorized from '../error/unauthorized-error';
+import { config } from '../../config';
 
 export const getUsers = (req: Request, res: Response, next: NextFunction) => {
   User.find({})
@@ -146,7 +146,6 @@ export const login = (
   next: NextFunction,
 ) => {
   const { email, password } = req.body;
-  const { NODE_ENV, JWT_SECRET = 'super-strong-secret' } = process.env;
   User.findOne({ email }).select('+password')
     .then((user) => {
       if (!user) {
@@ -160,7 +159,7 @@ export const login = (
           return user;
         });
     })
-    .then((user) => { res.send({ token: jwt.sign({ _id: user._id }, NODE_ENV === 'production' ? JWT_SECRET : 'dev-super-strong-secret', { expiresIn: '7d' }) }); })
+    .then((user) => { res.send({ token: jwt.sign({ _id: user._id }, config.JWT_SECRET, { expiresIn: '7d' }) }); })
     .catch((error) => {
       if (error instanceof NotFoundError) {
         return next(new NotFoundError(error.message));

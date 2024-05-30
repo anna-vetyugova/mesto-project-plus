@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import express from 'express';
 import mongoose from 'mongoose';
 import helmet from 'helmet';
@@ -15,8 +14,8 @@ import auth from './middleware/auth';
 import { errorHandler } from './middleware/error-handler';
 import usersRouter from './routes/users';
 import cardsRouter from './routes/cards';
+import { config } from '../config';
 
-const { MONGO_URL = 'mongodb://localhost:27017/mestodb', PORT = 3000 } = process.env;
 const app = express();
 
 app.use(express.json());
@@ -25,7 +24,7 @@ app.use(helmet());
 
 // подключаемся к серверу MongoiDB
 mongoose
-  .connect(MONGO_URL)
+  .connect(config.MONGO_URL)
   .then(() => {
     console.log('Подключение к БД MongoDB выполнено успешно');
   })
@@ -63,6 +62,6 @@ app.use(errorLogger);
 app.use(errors());
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+app.listen(config.PORT, () => {
+  console.log(`Server is running on http://localhost:${config.PORT}`);
 });
