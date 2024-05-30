@@ -1,8 +1,8 @@
-// app.ts — входной файл
+import 'dotenv/config';
 import express from 'express';
 import mongoose from 'mongoose';
 import helmet from 'helmet';
-import { errors } from 'celebrate';
+import { errors, Joi, celebrate } from 'celebrate';
 import {
   createUser,
   login,
@@ -15,8 +15,8 @@ import auth from './middleware/auth';
 import { errorHandler } from './middleware/error-handler';
 import usersRouter from './routes/users';
 import cardsRouter from './routes/cards';
-import { MONGO_URL, PORT } from './constants/constants';
 
+const { MONGO_URL = 'mongodb://localhost:27017/mestodb', PORT = 3000 } = process.env;
 const app = express();
 
 app.use(express.json());
@@ -34,8 +34,21 @@ mongoose
   });
 
 app.use(requestLogger);
-app.post('/signup', createUser);
-app.post('/signin', login);
+app.post('/signup', celebrate({
+  body: Joi.object().keys({
+    name: Joi.string().min(2).max(30),
+    about: Joi.string().min(2).max(200),
+    avatar: Joi.string().uri(),
+    email: Joi.string().required().email(),
+    password: Joi.string().required().min(6),
+  }),
+}), createUser);
+app.post('/signin', celebrate({
+  body: Joi.object().keys({
+    email: Joi.string().required().email(),
+    password: Joi.string().required().min(6),
+  }),
+}), login);
 
 app.use(auth);
 // подключаем мидлвары, роуты и всё остальное...
